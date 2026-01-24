@@ -208,7 +208,9 @@ func DoKiroCLIImport(cfg *config.Config, options *LoginOptions, dbPath string) {
 		fmt.Println("1. Run: kiro-cli login")
 		fmt.Println("2. Complete the AWS SSO login process")
 		fmt.Println("3. Run this command again")
-		fmt.Println("\nDefault database location: ~/.local/share/kiro-cli/data.sqlite3")
+		fmt.Println("\nDefault database location:")
+		fmt.Println("  macOS: ~/Library/Application Support/kiro-cli/data.sqlite3")
+		fmt.Println("  Linux: ~/.local/share/kiro-cli/data.sqlite3")
 		fmt.Println("Or specify custom path with: --kiro-cli-db /path/to/data.sqlite3")
 		return
 	}

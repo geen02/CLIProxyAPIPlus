@@ -110,7 +110,7 @@ func main() {
 	flag.BoolVar(&kiroAWSAuthCode, "kiro-aws-authcode", false, "Login to Kiro using AWS Builder ID (authorization code flow, better UX)")
 	flag.BoolVar(&kiroImport, "kiro-import", false, "Import Kiro token from Kiro IDE (~/.aws/sso/cache/kiro-auth-token.json)")
 	flag.BoolVar(&kiroCLIImport, "kiro-cli-import", false, "Import Kiro token from kiro-cli SQLite database")
-	flag.StringVar(&kiroCLIDBPath, "kiro-cli-db", "", "Path to kiro-cli SQLite database (default: ~/.local/share/kiro-cli/data.sqlite3)")
+	flag.StringVar(&kiroCLIDBPath, "kiro-cli-db", "", "Path to kiro-cli SQLite database (default: macOS: ~/Library/Application Support/kiro-cli/data.sqlite3, Linux: ~/.local/share/kiro-cli/data.sqlite3)")
 	flag.BoolVar(&githubCopilotLogin, "github-copilot-login", false, "Login to GitHub Copilot using device flow")
 	flag.StringVar(&projectID, "project_id", "", "Project ID (Gemini only, not required)")
 	flag.StringVar(&configPath, "config", DefaultConfigPath, "Configure File Path")

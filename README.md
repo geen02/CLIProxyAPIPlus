@@ -46,7 +46,9 @@ This provides a browser-based OAuth flow for Kiro (AWS CodeWhisperer) authentica
 Import OAuth tokens directly from kiro-cli:
 
 ```bash
-# Import from default location (~/.local/share/kiro-cli/data.sqlite3)
+# Import from default location
+# macOS: ~/Library/Application Support/kiro-cli/data.sqlite3
+# Linux: ~/.local/share/kiro-cli/data.sqlite3
 ./server --kiro-cli-import
 
 # Import from custom database path

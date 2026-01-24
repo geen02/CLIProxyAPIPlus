@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
@@ -169,18 +170,12 @@ func GetDefaultKiroCLIDBPath() string {
 		return ""
 	}
 
-	// Try kiro-cli path first
-	kiroPath := filepath.Join(home, ".local", "share", "kiro-cli", "data.sqlite3")
-	if _, err := os.Stat(kiroPath); err == nil {
-		return kiroPath
+	var kiroPath string
+	if runtime.GOOS == "darwin" {
+		kiroPath = filepath.Join(home, "Library", "Application Support", "kiro-cli", "data.sqlite3")
+	} else {
+		kiroPath = filepath.Join(home, ".local", "share", "kiro-cli", "data.sqlite3")
 	}
 
-	// Try amazon-q-developer-cli path
-	amazonQPath := filepath.Join(home, ".local", "share", "amazon-q", "data.sqlite3")
-	if _, err := os.Stat(amazonQPath); err == nil {
-		return amazonQPath
-	}
-
-	// Return kiro-cli path as default even if it doesn't exist
 	return kiroPath
 }
