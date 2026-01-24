@@ -165,24 +165,44 @@ func DoKiroAWSAuthCodeLogin(cfg *config.Config, options *LoginOptions) {
 }
 
 // DoKiroImport imports Kiro token from Kiro IDE's token file.
-// This function handles the --kiro-import flag.
-// It loads the token from ~/.aws/sso/cache/kiro-auth-token.json and saves it to the auth store.
-// The token can be used for subsequent API requests without re-authentication.
+// This is useful for users who have already logged in via Kiro IDE
+// and want to use the same credentials in CLI Proxy API.
+//
+// Parameters:
+//   - cfg: The application configuration
+//   - options: Login options (currently unused for import)
 func DoKiroImport(cfg *config.Config, options *LoginOptions) {
-	ctx := context.Background()
+	if options == nil {
+		options = &LoginOptions{}
+	}
+
+	manager := newAuthManager()
+
 	authenticator := sdkAuth.NewKiroAuthenticator()
-
-	authRecord, err := authenticator.ImportFromKiroIDE(ctx, cfg)
+	record, err := authenticator.ImportFromKiroIDE(context.Background(), cfg)
 	if err != nil {
-		log.Fatalf("Kiro IDE token import failed: %v", err)
+		log.Errorf("Kiro token import failed: %v", err)
+		fmt.Println("\nMake sure you have logged in to Kiro IDE first:")
+		fmt.Println("1. Open Kiro IDE")
+		fmt.Println("2. Click 'Sign in with Google' (or GitHub)")
+		fmt.Println("3. Complete the login process")
+		fmt.Println("4. Run this command again")
+		return
 	}
 
-	if err := SaveAuthRecord(cfg, authRecord); err != nil {
-		log.Fatalf("Failed to save auth record: %v", err)
+	savedPath, err := manager.SaveAuth(record, cfg)
+	if err != nil {
+		log.Errorf("Failed to save auth: %v", err)
+		return
 	}
 
-	fmt.Println("\n✓ Kiro IDE token imported and saved successfully!")
-	os.Exit(0)
+	if savedPath != "" {
+		fmt.Printf("Authentication saved to %s\n", savedPath)
+	}
+	if record != nil && record.Label != "" {
+		fmt.Printf("Imported as %s\n", record.Label)
+	}
+	fmt.Println("Kiro token import successful!")
 }
 
 // DoKiroCLIImport imports Kiro token from kiro-cli SQLite database.
@@ -228,35 +248,4 @@ func DoKiroCLIImport(cfg *config.Config, options *LoginOptions, dbPath string) {
 		fmt.Printf("Imported as %s\n", record.Label)
 	}
 	fmt.Println("kiro-cli token import successful!")
-}
-
-	manager := newAuthManager()
-
-	// Use ImportFromKiroIDE instead of Login
-	authenticator := sdkAuth.NewKiroAuthenticator()
-	record, err := authenticator.ImportFromKiroIDE(context.Background(), cfg)
-	if err != nil {
-		log.Errorf("Kiro token import failed: %v", err)
-		fmt.Println("\nMake sure you have logged in to Kiro IDE first:")
-		fmt.Println("1. Open Kiro IDE")
-		fmt.Println("2. Click 'Sign in with Google' (or GitHub)")
-		fmt.Println("3. Complete the login process")
-		fmt.Println("4. Run this command again")
-		return
-	}
-
-	// Save the imported auth record
-	savedPath, err := manager.SaveAuth(record, cfg)
-	if err != nil {
-		log.Errorf("Failed to save auth: %v", err)
-		return
-	}
-
-	if savedPath != "" {
-		fmt.Printf("Authentication saved to %s\n", savedPath)
-	}
-	if record != nil && record.Label != "" {
-		fmt.Printf("Imported as %s\n", record.Label)
-	}
-	fmt.Println("Kiro token import successful!")
 }
