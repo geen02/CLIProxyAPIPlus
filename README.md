@@ -12,6 +12,7 @@ The Plus release stays in lockstep with the mainline features.
 
 - Added GitHub Copilot support (OAuth login), provided by [em4go](https://github.com/em4go/CLIProxyAPI/tree/feature/github-copilot-auth)
 - Added Kiro (AWS CodeWhisperer) support (OAuth login), provided by [fuko2935](https://github.com/fuko2935/CLIProxyAPI/tree/feature/kiro-integration), [Ravens2121](https://github.com/Ravens2121/CLIProxyAPIPlus/)
+- Added kiro-cli OAuth token import support (import tokens from kiro-cli SQLite database)
 
 ## New Features (Plus Enhanced)
 
@@ -39,6 +40,22 @@ This provides a browser-based OAuth flow for Kiro (AWS CodeWhisperer) authentica
 - AWS Builder ID login
 - AWS Identity Center (IDC) login
 - Token import from Kiro IDE
+
+### CLI Token Import
+
+Import OAuth tokens directly from kiro-cli:
+
+```bash
+# Import from default location
+# macOS: ~/Library/Application Support/kiro-cli/data.sqlite3
+# Linux: ~/.local/share/kiro-cli/data.sqlite3
+./server --kiro-cli-import
+
+# Import from custom database path
+./server --kiro-cli-import --kiro-cli-db /path/to/data.sqlite3
+```
+
+This allows you to use existing kiro-cli credentials without re-authentication. See [docs/kiro-cli-import.md](docs/kiro-cli-import.md) for details.
 
 ## Quick Deployment with Docker
 

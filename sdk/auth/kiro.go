@@ -66,6 +66,11 @@ func (a *KiroAuthenticator) createAuthRecord(tokenData *kiroauth.KiroTokenData, 
 		expiresAt = time.Now().Add(1 * time.Hour)
 	}
 
+	// Extract email from JWT if not already present
+	if tokenData.Email == "" {
+		tokenData.Email = kiroauth.ExtractEmailFromJWT(tokenData.AccessToken)
+	}
+
 	// Determine label and identifier based on auth method
 	var label, idPart string
 	if tokenData.AuthMethod == "idc" {
@@ -123,14 +128,14 @@ func (a *KiroAuthenticator) createAuthRecord(tokenData *kiroauth.KiroTokenData, 
 	}
 
 	record := &coreauth.Auth{
-		ID:        fileName,
-		Provider:  "kiro",
-		FileName:  fileName,
-		Label:     label,
-		Status:    coreauth.StatusActive,
-		CreatedAt: now,
-		UpdatedAt: now,
-		Metadata:  metadata,
+		ID:         fileName,
+		Provider:   "kiro",
+		FileName:   fileName,
+		Label:      label,
+		Status:     coreauth.StatusActive,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+		Metadata:   metadata,
 		Attributes: attributes,
 		// NextRefreshAfter: 20 minutes before expiry
 		NextRefreshAfter: expiresAt.Add(-20 * time.Minute),
@@ -248,68 +253,24 @@ func (a *KiroAuthenticator) ImportFromKiroIDE(ctx context.Context, cfg *config.C
 		return nil, fmt.Errorf("failed to load Kiro IDE token: %w", err)
 	}
 
-	// Parse expires_at
-	expiresAt, err := time.Parse(time.RFC3339, tokenData.ExpiresAt)
+	return a.createAuthRecord(tokenData, "ide-import")
+}
+
+// ImportFromKiroCLI imports token from kiro-cli SQLite database.
+func (a *KiroAuthenticator) ImportFromKiroCLI(ctx context.Context, cfg *config.Config, dbPath string) (*coreauth.Auth, error) {
+	if dbPath == "" {
+		dbPath = kiroauth.GetDefaultKiroCLIDBPath()
+		if dbPath == "" {
+			return nil, fmt.Errorf("could not determine kiro-cli database path")
+		}
+	}
+
+	tokenData, err := kiroauth.LoadKiroCLIToken(dbPath)
 	if err != nil {
-		expiresAt = time.Now().Add(1 * time.Hour)
+		return nil, fmt.Errorf("failed to load kiro-cli token: %w", err)
 	}
 
-	// Extract email from JWT if not already set (for imported tokens)
-	if tokenData.Email == "" {
-		tokenData.Email = kiroauth.ExtractEmailFromJWT(tokenData.AccessToken)
-	}
-
-	// Extract identifier for file naming
-	idPart := extractKiroIdentifier(tokenData.Email, tokenData.ProfileArn, tokenData.ClientID)
-	// Sanitize provider to prevent path traversal (defense-in-depth)
-	provider := kiroauth.SanitizeEmailForFilename(strings.ToLower(strings.TrimSpace(tokenData.Provider)))
-	if provider == "" {
-		provider = "imported" // Fallback for legacy tokens without provider
-	}
-
-	now := time.Now()
-	fileName := fmt.Sprintf("kiro-%s-%s.json", provider, idPart)
-
-	record := &coreauth.Auth{
-		ID:        fileName,
-		Provider:  "kiro",
-		FileName:  fileName,
-		Label:     fmt.Sprintf("kiro-%s", provider),
-		Status:    coreauth.StatusActive,
-		CreatedAt: now,
-		UpdatedAt: now,
-		Metadata: map[string]any{
-			"type":          "kiro",
-			"access_token":  tokenData.AccessToken,
-			"refresh_token": tokenData.RefreshToken,
-			"profile_arn":   tokenData.ProfileArn,
-			"expires_at":    tokenData.ExpiresAt,
-			"auth_method":   tokenData.AuthMethod,
-			"provider":      tokenData.Provider,
-			"client_id":     tokenData.ClientID,
-			"client_secret": tokenData.ClientSecret,
-			"email":         tokenData.Email,
-			"region":        tokenData.Region,
-			"start_url":     tokenData.StartURL,
-		},
-		Attributes: map[string]string{
-			"profile_arn": tokenData.ProfileArn,
-			"source":      "kiro-ide-import",
-			"email":       tokenData.Email,
-			"region":      tokenData.Region,
-		},
-		// NextRefreshAfter: 20 minutes before expiry
-		NextRefreshAfter: expiresAt.Add(-20 * time.Minute),
-	}
-
-	// Display the email if extracted
-	if tokenData.Email != "" {
-		fmt.Printf("\n✓ Imported Kiro token from IDE (Provider: %s, Account: %s)\n", tokenData.Provider, tokenData.Email)
-	} else {
-		fmt.Printf("\n✓ Imported Kiro token from IDE (Provider: %s)\n", tokenData.Provider)
-	}
-
-	return record, nil
+	return a.createAuthRecord(tokenData, "cli-import")
 }
 
 // Refresh refreshes an expired Kiro token using AWS SSO OIDC.

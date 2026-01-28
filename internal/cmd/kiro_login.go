@@ -178,7 +178,6 @@ func DoKiroImport(cfg *config.Config, options *LoginOptions) {
 
 	manager := newAuthManager()
 
-	// Use ImportFromKiroIDE instead of Login
 	authenticator := sdkAuth.NewKiroAuthenticator()
 	record, err := authenticator.ImportFromKiroIDE(context.Background(), cfg)
 	if err != nil {
@@ -191,7 +190,6 @@ func DoKiroImport(cfg *config.Config, options *LoginOptions) {
 		return
 	}
 
-	// Save the imported auth record
 	savedPath, err := manager.SaveAuth(record, cfg)
 	if err != nil {
 		log.Errorf("Failed to save auth: %v", err)
@@ -205,4 +203,49 @@ func DoKiroImport(cfg *config.Config, options *LoginOptions) {
 		fmt.Printf("Imported as %s\n", record.Label)
 	}
 	fmt.Println("Kiro token import successful!")
+}
+
+// DoKiroCLIImport imports Kiro token from kiro-cli SQLite database.
+// This is useful for users who have already logged in via kiro-cli
+// and want to use the same credentials in CLI Proxy API.
+//
+// Parameters:
+//   - cfg: The application configuration
+//   - options: Login options (currently unused for import)
+//   - dbPath: Path to kiro-cli SQLite database (empty string uses default)
+func DoKiroCLIImport(cfg *config.Config, options *LoginOptions, dbPath string) {
+	if options == nil {
+		options = &LoginOptions{}
+	}
+
+	manager := newAuthManager()
+
+	authenticator := sdkAuth.NewKiroAuthenticator()
+	record, err := authenticator.ImportFromKiroCLI(context.Background(), cfg, dbPath)
+	if err != nil {
+		log.Errorf("kiro-cli token import failed: %v", err)
+		fmt.Println("\nMake sure you have logged in to kiro-cli first:")
+		fmt.Println("1. Run: kiro-cli login")
+		fmt.Println("2. Complete the AWS SSO login process")
+		fmt.Println("3. Run this command again")
+		fmt.Println("\nDefault database location:")
+		fmt.Println("  macOS: ~/Library/Application Support/kiro-cli/data.sqlite3")
+		fmt.Println("  Linux: ~/.local/share/kiro-cli/data.sqlite3")
+		fmt.Println("Or specify custom path with: --kiro-cli-db /path/to/data.sqlite3")
+		return
+	}
+
+	savedPath, err := manager.SaveAuth(record, cfg)
+	if err != nil {
+		log.Errorf("Failed to save auth: %v", err)
+		return
+	}
+
+	if savedPath != "" {
+		fmt.Printf("Authentication saved to %s\n", savedPath)
+	}
+	if record != nil && record.Label != "" {
+		fmt.Printf("Imported as %s\n", record.Label)
+	}
+	fmt.Println("kiro-cli token import successful!")
 }
