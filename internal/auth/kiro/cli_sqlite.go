@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/sirupsen/logrus"
@@ -47,7 +48,7 @@ type KiroCLIDeviceRegistration struct {
 // It searches for tokens in priority order and returns the first valid token found.
 func LoadKiroCLIToken(dbPath string) (*KiroTokenData, error) {
 	// Expand home directory if needed
-	if dbPath[:2] == "~/" {
+	if strings.HasPrefix(dbPath, "~/") {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get home directory: %w", err)
@@ -96,6 +97,11 @@ func LoadKiroCLIToken(dbPath string) (*KiroTokenData, error) {
 
 	if tokenData == nil {
 		return nil, fmt.Errorf("no valid token found in database (tried keys: %v)", sqliteTokenKeys)
+	}
+
+	// Validate that access token is not empty
+	if tokenData.AccessToken == "" {
+		return nil, fmt.Errorf("access token is empty in kiro-cli database")
 	}
 
 	// Try to load device registration (for AWS SSO OIDC)

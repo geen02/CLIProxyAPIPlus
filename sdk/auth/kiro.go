@@ -66,6 +66,11 @@ func (a *KiroAuthenticator) createAuthRecord(tokenData *kiroauth.KiroTokenData, 
 		expiresAt = time.Now().Add(1 * time.Hour)
 	}
 
+	// Extract email from JWT if not already present
+	if tokenData.Email == "" {
+		tokenData.Email = kiroauth.ExtractEmailFromJWT(tokenData.AccessToken)
+	}
+
 	// Determine label and identifier based on auth method
 	var label, idPart string
 	if tokenData.AuthMethod == "idc" {
